@@ -1,0 +1,50 @@
+# Copy to configs/local.yaml (gitignored) and adapt to your machine.
+# Values here deep-merge over configs/default.yaml.
+# NOTE: the numbers below are examples for a small shared box, NOT the
+# paper's hyperparameters (see configs/default.yaml for those).
+
+model:
+  actor:
+    base_model: /path/to/Qwen2.5-7B-Instruct
+  rewriter:
+    base_model: /path/to/Qwen2.5-7B-Instruct
+  reward_model:
+    model: qwen2.5-14b-rm             # served-model-name of the local RM server
+    api_base: http://localhost:8000/v1
+
+servers:
+  rm:
+    manage: true
+    model: /path/to/Qwen2.5-14B-Instruct
+    port: 8000
+    gpu_ids: "auto:1"
+    tensor_parallel_size: 1
+  actor:
+    port: 8001
+    gpu_ids: "auto:1"
+  rewriter:
+    port: 8002
+    gpu_ids: "auto:1"
+
+hardware:
+  actor_gpus: "auto:2"
+  min_free_mb: 42000
+  attn_implementation: sdpa
+  use_remove_padding: false
+  vllm_torch_compile: false
+  rollout_enforce_eager: true
+  extra_env:
+    NCCL_SOCKET_IFNAME: lo
+    NCCL_IB_DISABLE: "1"
+    NCCL_P2P_DISABLE: "1"
+
+eval:
+  judge_model: qwen2.5-7b-judge
+  judge_api_base: http://localhost:8003/v1
+  judge_api_key_env: EMPTY
+  lanobe_judge_model: qwen2.5-7b-judge
+  lanobe_judge_api_base: http://localhost:8003/v1
+  lanobe_judge_api_key_env: EMPTY
+  baichuan_char_rm: /path/to/BaichuanCharRM
+  embed_model: /path/to/bge-m3
+  embed_api_base: local

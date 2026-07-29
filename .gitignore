@@ -1,0 +1,41 @@
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# ----- Env / editors -----
+.venv/
+venv/
+.env
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# ----- Data & models (symlinked to large disks, never committed) -----
+data
+data/
+lanobe_demo/
+models/
+*.ckpt
+*.pt
+*.bin
+*.safetensors
+
+# ----- Runtime outputs -----
+outputs/
+logs/
+results/
+wandb/
+*.log
+ray_results/
+
+# ----- Local-only config (each machine keeps its own) -----
+configs/local.yaml
+
+# ----- Jupyter -----
+.ipynb_checkpoints/

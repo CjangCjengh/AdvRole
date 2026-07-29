@@ -1,0 +1,109 @@
+# AdvRole default configuration (paper Sec. 4.1 / supplementary App. B).
+# Machine-specific overrides go in configs/local.yaml (gitignored).
+# Precedence: default.yaml < --config <file> < configs/local.yaml < --set k=v
+
+model:
+  actor:
+    base_model: Qwen/Qwen2.5-7B-Instruct
+  rewriter:
+    base_model: Qwen/Qwen2.5-7B-Instruct
+  reward_model:
+    model: Qwen/Qwen2.5-72B-Instruct
+    api_base: http://localhost:8000/v1
+    api_key: EMPTY
+    prompt_style: null        # null -> follow the trained dataset
+    temperature: 0.0
+    max_tokens: 256
+
+# GRPO hyperparameters (paper Sec. 4.1.1)
+grpo:
+  group_size: 8               # G
+  clip_epsilon: 0.2           # epsilon
+  kl_coeff: 0.04              # beta
+  batch_size: 32
+  learning_rate: 1.0e-6
+  max_grad_norm: 1.0
+  ppo_mini_batch_size: 32     # infra (not specified in the paper)
+  ppo_micro_batch_size_per_gpu: 2
+  max_prompt_length: 3072
+
+actor:
+  max_new_tokens: 512
+  temperature: 0.7
+
+rewriter:
+  num_actor_samples: 3        # N in paper Eq. (6)
+  max_new_tokens: 2048
+  temperature: 0.7
+  augment_concurrency: 16
+
+training:
+  num_epochs: 3
+  actor_steps_per_epoch: 200
+  rewriter_steps_per_epoch: 100
+
+servers:
+  rm:
+    manage: true
+    model: Qwen/Qwen2.5-72B-Instruct
+    port: 8000
+    gpu_ids: "auto:4"
+    tensor_parallel_size: 4   # paper: reward_tensor_parallel_size = 4
+    gpu_memory_utilization: 0.9
+    max_model_len: 8192
+  actor:
+    manage: true
+    port: 8001
+    gpu_ids: "auto:1"
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.85
+    max_model_len: 4096
+  rewriter:
+    manage: true
+    port: 8002
+    gpu_ids: "auto:1"
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.85
+    max_model_len: 8192
+
+hardware:
+  actor_gpus: "auto:16"       # paper: 16 H20 GPUs
+  rollout_tp: 1
+  rollout_gpu_memory_utilization: 0.5   # infra, not specified in the paper
+  min_free_mb: 40000
+  attn_implementation: flash_attention_2
+  use_remove_padding: true
+
+data:
+  charactereval:
+    train_path: data/processed/charactereval/train.jsonl
+    val_path: data/processed/charactereval/val.jsonl
+    test_path: data/processed/charactereval/test.jsonl
+  coser:
+    train_path: data/processed/coser/train.jsonl
+    val_path: data/processed/coser/val.jsonl
+    test_path: data/processed/coser/test.jsonl
+    test_set_original: data/processed/coser/test_set_original.json
+  raiden:
+    train_path: data/processed/raiden/test.jsonl   # zero-shot: no training
+    val_path: data/processed/raiden/test.jsonl
+    test_path: data/processed/raiden/test.jsonl
+  lanobe:
+    data_dir: data/processed/lanobe
+    languages: [zh-cn, zh-tw, ja, ko, th]
+
+eval:
+  judge_model: gpt-4o                 # CoSER / RAIDEN judge (paper)
+  judge_api_base: https://api.openai.com/v1
+  judge_api_key_env: OPENAI_API_KEY
+  lanobe_judge_model: kimi-k2.6       # Lanobe judge (paper)
+  lanobe_judge_api_base: https://api.moonshot.cn/v1
+  lanobe_judge_api_key_env: MOONSHOT_API_KEY
+  baichuan_char_rm: morecry/BaichuanCharRM
+  embed_model: text-embedding-3-large # diversity analysis embeddings (paper Sec. 4.6)
+  embed_api_base: https://api.openai.com/v1
+  embed_api_key_env: OPENAI_API_KEY
+  max_samples: 0                      # 0 = evaluate everything
+
+output:
+  output_dir: outputs

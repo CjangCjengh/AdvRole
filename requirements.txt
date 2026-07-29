@@ -1,0 +1,24 @@
+# Core training stack (install into a dedicated conda env, see README)
+# For Chinese mirrors: pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+verl==0.8.0
+vllm>=0.8.0
+torch>=2.6.0
+transformers>=4.45.0
+ray>=2.30
+
+# Data / orchestration
+pyyaml>=6.0
+pandas>=2.0
+pyarrow>=14.0
+datasets>=2.18
+tqdm
+rich
+numpy
+scikit-learn
+
+# Clients / metrics
+openai>=1.0
+nltk
+rouge-score
+jieba
+huggingface_hub
