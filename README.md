@@ -1,5 +1,12 @@
 # AdvRole
 
+[![Paper](https://img.shields.io/badge/Paper-arXiv%202609.28609-b31b1f)](https://arxiv.org/abs/2609.28609)
+[![Project Page](https://img.shields.io/badge/Project%20Page-GitHub%20Pages-2dd4a7)](https://cjangcjengh.github.io/AdvRole/)
+
+This is the official implementation of the paper *Adversarial Closed-Loop Curriculum for Evolving Role-Playing Agents*.
+
+AdvRole turns role-playing RL into a closed-loop curriculum: an **Actor** learns to role-play while a **Rewriter** is trained with a performance-gap reward to edit character profiles and dialogue contexts into actor-specific hard scenarios, so the training pool keeps evolving with the Actor. It is evaluated on CharacterEval, CoSER, RAIDEN (zero-shot), and **Lanobe**, a new multilingual role-playing benchmark covering Simplified/Traditional Chinese, Japanese, Korean, and Thai.
+
 ## Setup
 
 ```bash
@@ -53,4 +60,18 @@ python -m eval.diversity --original <S0.jsonl> --rewritten <rw.jsonl> \
 
 ```bash
 bash scripts/run_smoke.sh     # 2 actor steps + 1 rewriter step + 16 rewrites
+```
+
+## Citation
+
+```bibtex
+@misc{zhang2026adversarialclosedloopcurriculumevolving,
+      title={Adversarial Closed-Loop Curriculum for Evolving Role-Playing Agents},
+      author={Zheng Zhang and Liu Liu and Qi Chai and Deheng Ye and Peilin Zhao and Mao Zheng and Hao Wang},
+      year={2026},
+      eprint={2609.28609},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2609.28609},
+}
 ```

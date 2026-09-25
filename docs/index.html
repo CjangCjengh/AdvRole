@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdvRole: Adversarial Closed-Loop Curriculum for Evolving Role-Playing Agents</title>
+    <meta name="description" content="AdvRole turns role-playing RL into a closed-loop curriculum: an Actor learns to role-play while a Rewriter evolves the training scenarios toward the Actor's weaknesses.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e0c'/%3E%3Cpath d='M9 16a7 7 0 0 1 14 0' fill='none' stroke='%232dd4a7' stroke-width='2.4' stroke-linecap='round'/%3E%3Cpath d='M23 16a7 7 0 0 1-14 0' fill='none' stroke='%23f6b83c' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+
+<nav class="navbar" id="navbar" aria-label="Main navigation">
+    <div class="nav-inner">
+        <a href="#top" class="nav-brand">
+            <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+                <path d="M9 16a7 7 0 0 1 14 0" fill="none" stroke="#2dd4a7" stroke-width="2.6" stroke-linecap="round"/>
+                <path d="M23 16a7 7 0 0 1-14 0" fill="none" stroke="#f6b83c" stroke-width="2.6" stroke-linecap="round"/>
+            </svg>
+            <span>AdvRole</span>
+        </a>
+        <div class="nav-links" id="navLinks">
+            <a href="#abstract" class="nav-link">Abstract</a>
+            <a href="#motivation" class="nav-link">Motivation</a>
+            <a href="#method" class="nav-link">Method</a>
+            <a href="#results" class="nav-link">Results</a>
+            <a href="#lanobe" class="nav-link">Lanobe</a>
+            <a href="#citation" class="nav-link">Citation</a>
+        </div>
+    </div>
+</nav>
+
+<!-- ============ Hero ============ -->
+<header class="hero" id="top">
+    <div class="hero-glow hero-glow-actor" aria-hidden="true"></div>
+    <div class="hero-glow hero-glow-rewriter" aria-hidden="true"></div>
+    <div class="hero-inner">
+        <div class="hero-copy">
+            <p class="eyebrow"><span class="eyebrow-dot"></span>arXiv:2609.28609&nbsp;&nbsp;·&nbsp;&nbsp;cs.AI&nbsp;&nbsp;·&nbsp;&nbsp;Preprint</p>
+            <h1 class="hero-title">
+                Adversarial <span class="grad-text">Closed-Loop</span> Curriculum for Evolving Role-Playing Agents
+            </h1>
+            <div class="hero-authors">
+                <span>Zheng Zhang<sup>1</sup></span><span>Liu Liu<sup>2</sup></span><span>Qi Chai<sup>1</sup></span><span>Deheng Ye<sup>2</sup></span><span>Peilin Zhao<sup>3</sup></span><span>Mao Zheng<sup>2</sup></span><span>Hao Wang<sup>1</sup></span>
+            </div>
+            <p class="hero-affiliations">
+                <sup>1</sup>The Hong Kong University of Science and Technology (Guangzhou)&nbsp;&nbsp;<sup>2</sup>Tencent&nbsp;&nbsp;<sup>3</sup>Shanghai Jiao Tong University
+            </p>
+            <div class="hero-buttons">
+                <a class="btn btn-primary" href="https://arxiv.org/abs/2609.28609" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h3l12 12-3 3L4 7V4zm2 9v3h3l3-3-3-3-3 3z" fill="currentColor"/></svg>
+                    Read the Paper
+                </a>
+                <a class="btn btn-ghost" href="https://github.com/CjangCjengh/AdvRole" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.2-3.4-1.2-.4-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.2-.4-1.2.1-2.6 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.6.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z" fill="currentColor"/></svg>
+                    Code
+                </a>
+                <button class="btn btn-ghost" id="citeQuickBtn" type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h2M15 4h2a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-2M8 12h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    BibTeX
+                </button>
+            </div>
+        </div>
+
+        <div class="hero-visual reveal" aria-hidden="true">
+            <svg class="loop-svg" viewBox="0 0 420 420">
+                <defs>
+                    <marker id="arrowTeal" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                        <path d="M0 0 L10 5 L0 10 z" fill="#2dd4a7"/>
+                    </marker>
+                    <marker id="arrowAmber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                        <path d="M0 0 L10 5 L0 10 z" fill="#f6b83c"/>
+                    </marker>
+                </defs>
+
+                <!-- flowing ring -->
+                <g class="ring-spin">
+                    <circle cx="210" cy="210" r="150" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+                    <circle class="flow flow-ccw" cx="210" cy="210" r="150" fill="none" stroke="#2dd4a7" stroke-width="2" stroke-dasharray="4 10" opacity="0.8"/>
+                    <circle class="flow flow-cw" cx="210" cy="210" r="150" fill="none" stroke="#f6b83c" stroke-width="2" stroke-dasharray="4 10" opacity="0.8"/>
+                </g>
+
+                <!-- direction arrows on the ring -->
+                <path d="M 210 46 l -14 -9 M 210 46 l -3 -16" fill="none" stroke="#2dd4a7" stroke-width="2.5" stroke-linecap="round" transform="rotate(45 210 210)"/>
+                <path d="M 210 46 l -14 -9 M 210 46 l -3 -16" fill="none" stroke="#f6b83c" stroke-width="2.5" stroke-linecap="round" transform="rotate(225 210 210)"/>
+
+                <!-- Actor node -->
+                <g class="node node-actor">
+                    <circle cx="210" cy="52" r="46" fill="#0e1613" stroke="#2dd4a7" stroke-width="1.5"/>
+                    <text x="210" y="47" text-anchor="middle" class="node-title">ACTOR</text>
+                    <text x="210" y="66" text-anchor="middle" class="node-sub">GRPO</text>
+                </g>
+
+                <!-- Rewriter node -->
+                <g class="node node-rewriter">
+                    <circle cx="345" cy="292" r="46" fill="#171209" stroke="#f6b83c" stroke-width="1.5"/>
+                    <text x="345" y="287" text-anchor="middle" class="node-title">REWRITER</text>
+                    <text x="345" y="306" text-anchor="middle" class="node-sub">adversarial</text>
+                </g>
+
+                <!-- Pool node -->
+                <g class="node node-pool">
+                    <circle cx="75" cy="292" r="46" fill="#12140f" stroke="#e8ece9" stroke-width="1.5"/>
+                    <text x="75" y="282" text-anchor="middle" class="node-title node-title-sm">SCENARIO</text>
+                    <text x="75" y="300" text-anchor="middle" class="node-title node-title-sm">POOL</text>
+                    <text x="75" y="318" text-anchor="middle" class="node-sub">evolving</text>
+                </g>
+
+                <!-- arc labels -->
+                <text x="315" y="132" text-anchor="middle" class="arc-label arc-label-amber">performance-gap reward</text>
+                <text x="210" y="402" text-anchor="middle" class="arc-label arc-label-teal">hard scenarios</text>
+                <text x="105" y="128" text-anchor="middle" class="arc-label arc-label-teal">training signal</text>
+            </svg>
+        </div>
+    </div>
+
+    <div class="stats-band">
+        <div class="stat reveal">
+            <div class="stat-value">3.49</div>
+            <div class="stat-label">CharacterEval Overall<br><span>Qwen2.5-14B · +0.11 vs best baseline</span></div>
+        </div>
+        <div class="stat reveal reveal-delay-1">
+            <div class="stat-value">59.1</div>
+            <div class="stat-label">CoSER Average<br><span>Qwen2.5-7B · +2.2 vs CogDual-RL</span></div>
+        </div>
+        <div class="stat reveal reveal-delay-2">
+            <div class="stat-value">0.64</div>
+            <div class="stat-label">RAIDEN Average<br><span>zero-shot transfer, +0.03</span></div>
+        </div>
+        <div class="stat reveal reveal-delay-3">
+            <div class="stat-value">5</div>
+            <div class="stat-label">Languages in Lanobe<br><span>our new multilingual benchmark</span></div>
+        </div>
+    </div>
+
+    <a class="scroll-cue" href="#abstract" aria-label="Scroll to abstract">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </a>
+</header>
+
+<main>
+
+<!-- ============ Abstract ============ -->
+<section class="section" id="abstract">
+    <div class="container">
+        <div class="section-head reveal">
+            <span class="section-index">01</span>
+            <h2>Abstract</h2>
+        </div>
+        <div class="abstract-card reveal">
+            <p>
+                Role-playing agents based on large language models have been widely applied in areas such as personalized assistance and social simulation. Recent RL methods typically train on a <strong>fixed scenario pool</strong> collected before learning begins. This creates a distributional bottleneck: as the agent improves, the scenarios where it performs poorly also change, while the training distribution remains static.
+            </p>
+            <p>
+                We propose <strong>AdvRole</strong>, an adversarial context rewriting framework that turns role-playing RL into a <strong>closed-loop curriculum</strong>. AdvRole alternates between an Actor that learns to role-play and a Rewriter that edits character profiles and dialogue contexts into actor-specific hard scenarios. The Rewriter is trained with a <strong>performance-gap reward</strong>, which favors rewrites that reduce the current Actor's score relative to the original scenario. As a result, the scenario pool evolves with the Actor and continuously targets under-mastered regions of the character-context space.
+            </p>
+            <p>
+                Experiments on three role-playing benchmarks covering English and Chinese, as well as a new multilingual benchmark we release, show that AdvRole consistently outperforms baselines.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ============ Motivation ============ -->
+<section class="section section-alt" id="motivation">
+    <div class="container">
+        <div class="section-head reveal">
+            <span class="section-index">02</span>
+            <h2>Motivation</h2>
+        </div>
+        <div class="split reveal">
+            <div class="split-text">
+                <h3>A static pool cannot follow a moving failure boundary</h3>
+                <p>
+                    A role-playing scenario is the joint product of a <strong>character profile</strong> (personality, background, speaking style) and a <strong>dialogue context</strong> (scene, partner, history, emotional trajectory). Any fixed pool covers only a small region of this combinatorial space.
+                </p>
+                <p>
+                    More importantly, scenario difficulty is <strong>actor-dependent</strong>. As the Actor improves, the scenarios where it still struggles keep changing: common profiles become uninformative, while useful training data shifts toward rarer traits, subtle conflicts, and unfamiliar dialogue states. The key question is not only how to reward a response, but <strong>where to train the Actor next</strong>.
+                </p>
+                <p class="callout">
+                    AdvRole closes this gap by letting the training distribution itself evolve with the Actor, targeting the regions of the character-context space where the Actor currently fails.
+                </p>
+            </div>
+            <figure class="split-figure">
+                <div class="figure-frame">
+                    <img src="static/images/concept.png" alt="Comparison between existing methods and AdvRole">
+                </div>
+                <figcaption>
+                    <strong>Fixed pool vs AdvRole.</strong> Existing methods train the Actor on a scenario pool collected before training. AdvRole introduces a Rewriter that continually edits character profiles and dialogue contexts to expose Actor failures, evolving the pool throughout training.
+                </figcaption>
+            </figure>
+        </div>
+    </div>
+</section>
+
+<!-- ============ Method ============ -->
+<section class="section" id="method">
+    <div class="container">
+        <div class="section-head reveal">
+            <span class="section-index">03</span>
+            <h2>Method</h2>
+        </div>
+
+        <div class="method-intro reveal">
+            <p>
+                AdvRole trains two models alternately: an <span class="tag tag-actor">Actor</span> that performs role-playing, and a <span class="tag tag-rewriter">Rewriter</span> that edits the original character profile and dialogue context to expose the Actor's failures. Both are optimized with GRPO, and the scenario pool keeps evolving as the Rewriter improves.
+            </p>
+        </div>
+
+        <figure class="figure-wide reveal">
+            <div class="figure-frame">
+                <img src="static/images/framework.png" alt="The training framework of AdvRole">
+            </div>
+            <figcaption>
+                <strong>The training framework of AdvRole.</strong> In each epoch, the Actor is first trained by GRPO on the current scenario pool with rewards from a reward model, and the Rewriter is then trained to edit original scenarios to expose the Actor's failures, with its reward defined by the Actor's performance gap between the original and rewritten scenarios. The updated Rewriter further augments the pool for the next epoch, yielding an evolving scenario pool.
+            </figcaption>
+        </figure>
+
+        <div class="steps reveal">
+            <div class="step-card step-actor reveal reveal-delay-1">
+                <div class="step-num">01</div>
+                <h3>Actor Training</h3>
+                <p>The Actor is updated on the current scenario pool with GRPO. A strong open-source LLM (Qwen2.5-72B-Instruct) scores each response along several role-playing dimensions, and a length-decay coefficient keeps responses from drifting longer.</p>
+            </div>
+            <div class="step-card step-rewriter reveal reveal-delay-2">
+                <div class="step-num">02</div>
+                <h3>Adversarial Rewriter Training</h3>
+                <p>The Rewriter edits profiles and contexts into harder variants. Its reward is the <strong>performance gap</strong>: the Actor's score on the original scenario minus its score on the rewrite, averaged over N sampled responses. Rewrites longer than 150% of the source are penalized to prevent padding.</p>
+            </div>
+            <div class="step-card step-pool reveal reveal-delay-3">
+                <div class="step-num">03</div>
+                <h3>Scenario Augmentation</h3>
+                <p>The updated Rewriter rewrites every original scenario into a failure-revealing variant, and all rewrites are merged into the pool for the next epoch. Rewriting always starts from the original pool, keeping augmentation grounded in real profiles and contexts.</p>
+            </div>
+        </div>
+
+        <div class="diversity-card reveal">
+            <div class="diversity-head">
+                <h3>The pool measurably drifts into new territory</h3>
+                <p>Diversity measured in embedding space (text-embedding-3-large). IPD: intra-pool distance. ED: embedding drift of rewrites from their sources. NC: new K-Means clusters occupied by rewrites.</p>
+            </div>
+            <div class="diversity-table">
+                <table>
+                    <thead>
+                        <tr><th>Pool</th><th>IPD ↑</th><th>ED ↑</th><th>NC ↑</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>S₀ (original)</td><td>0.564</td><td class="dim">–</td><td class="dim">–</td></tr>
+                        <tr><td>+ Epoch 1 rewrite</td><td>0.581</td><td>0.203</td><td>7/30</td></tr>
+                        <tr><td>+ Epoch 2 rewrite</td><td>0.594</td><td>0.231</td><td>11/30</td></tr>
+                        <tr><td>+ Epoch 3 rewrite</td><td>0.602</td><td>0.254</td><td>14/30</td></tr>
+                        <tr class="row-dim"><td>+ Random paraphrase</td><td>0.566</td><td>0.008</td><td>0/30</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ Results ============ -->
+<section class="section section-alt" id="results">
+    <div class="container">
+        <div class="section-head reveal">
+            <span class="section-index">04</span>
+            <h2>Results</h2>
+        </div>
+        <p class="results-intro reveal">
+            AdvRole is evaluated on <strong>CharacterEval</strong> (Chinese), <strong>CoSER</strong> (English, multi-turn), and <strong>RAIDEN</strong> (Chinese, zero-shot transfer), against recent role-playing RL methods: CPO, R4, VeriRole, and CogDual. Best scores are <span class="best-legend">highlighted</span>; ties share the mark.
+        </p>
+
+        <div class="tabs reveal" role="tablist" aria-label="Benchmark results">
+            <button class="tab active" role="tab" aria-selected="true" data-panel="panel-ce">CharacterEval</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="panel-coser">CoSER</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="panel-raiden">RAIDEN (zero-shot)</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="panel-lanobe">Lanobe</button>
+        </div>
+
+        <div class="tab-panels reveal">
+
+            <div class="tab-panel active" id="panel-ce" role="tabpanel">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Model</th><th>Conversational&nbsp;Ability ↑</th><th>Character&nbsp;Consistency ↑</th><th>Role-playing&nbsp;Attractiveness ↑</th><th>Overall ↑</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr class="row-group"><td colspan="5">Large-Scale LLMs</td></tr>
+                            <tr><td>Kimi-K2.6 (non-thinking)</td><td>4.10</td><td>3.21</td><td>3.43</td><td>3.58</td></tr>
+                            <tr><td>Kimi-K2.6 (thinking)</td><td>4.06</td><td>3.35</td><td>3.58</td><td>3.66</td></tr>
+                            <tr><td>Claude-3.7-Sonnet</td><td>3.90</td><td>3.06</td><td>3.25</td><td>3.41</td></tr>
+                            <tr><td>GPT-4o</td><td>3.63</td><td>2.90</td><td>3.06</td><td>3.20</td></tr>
+                            <tr><td>Qwen2.5-72B-Instruct</td><td>3.80</td><td>3.05</td><td>3.28</td><td>3.37</td></tr>
+                            <tr class="row-group"><td colspan="5">Qwen2.5-7B-Instruct</td></tr>
+                            <tr><td>Vanilla</td><td>3.71</td><td>2.91</td><td>3.13</td><td>3.25</td></tr>
+                            <tr><td>CPO</td><td>3.75</td><td>3.03</td><td>3.30</td><td>3.36</td></tr>
+                            <tr><td>R4</td><td>3.79</td><td>2.79</td><td>3.05</td><td>3.21</td></tr>
+                            <tr><td>VeriRole</td><td>3.50</td><td class="best">3.16</td><td>3.24</td><td>3.30</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td class="best">3.83</td><td>3.10</td><td class="best">3.36</td><td class="best">3.43</td></tr>
+                            <tr class="row-group"><td colspan="5">Qwen2.5-14B-Instruct</td></tr>
+                            <tr><td>Vanilla</td><td>3.72</td><td>2.95</td><td>3.17</td><td>3.28</td></tr>
+                            <tr><td>CPO</td><td>3.81</td><td>3.04</td><td>3.29</td><td>3.38</td></tr>
+                            <tr><td>R4</td><td>3.86</td><td>3.00</td><td>3.22</td><td>3.36</td></tr>
+                            <tr><td>VeriRole</td><td>3.56</td><td>3.17</td><td>3.23</td><td>3.32</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td class="best">3.89</td><td class="best">3.18</td><td class="best">3.40</td><td class="best">3.49</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="table-note">
+                    Dimension scores are means of underlying 1–5 metrics; Overall is the mean of the three dimensions. The fine-tuned Qwen2.5-14B-Instruct surpasses several much larger LLMs overall, suggesting the bottleneck of small role-playing models lies more in scenario coverage than raw capacity.
+                </p>
+            </div>
+
+            <div class="tab-panel" id="panel-coser" role="tabpanel" hidden>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Model</th><th>Storyline&nbsp;Consist. ↑</th><th>Anthropo-<br>morphism ↑</th><th>Character&nbsp;Fidelity ↑</th><th>Storyline&nbsp;Quality ↑</th><th>Average ↑</th><th>BLEU ↑</th><th>ROUGE-L ↑</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr class="row-group"><td colspan="8">Large-Scale LLMs</td></tr>
+                            <tr><td>Gemini-1.5-Pro</td><td>59.1</td><td>52.4</td><td>47.8</td><td>77.6</td><td>59.2</td><td>0.054</td><td>0.117</td></tr>
+                            <tr><td>DeepSeek-V3</td><td>56.4</td><td>47.9</td><td>44.0</td><td>76.7</td><td>56.2</td><td>0.045</td><td>0.110</td></tr>
+                            <tr><td>Claude-3.5-Sonnet</td><td>57.5</td><td>48.5</td><td>45.7</td><td>77.2</td><td>57.2</td><td>0.052</td><td>0.115</td></tr>
+                            <tr><td>GPT-4o</td><td>58.9</td><td>43.1</td><td>41.6</td><td>75.4</td><td>54.8</td><td>0.059</td><td>0.121</td></tr>
+                            <tr class="row-group"><td colspan="8">Qwen2.5-7B-Instruct</td></tr>
+                            <tr><td>Vanilla</td><td>59.9</td><td>42.0</td><td>41.5</td><td>62.3</td><td>51.4</td><td>0.007</td><td>0.155</td></tr>
+                            <tr><td>CoT</td><td>55.8</td><td>37.2</td><td>36.5</td><td>61.8</td><td>47.8</td><td>0.007</td><td>0.153</td></tr>
+                            <tr><td>CB-CoT</td><td>56.9</td><td>44.9</td><td>39.1</td><td>62.5</td><td>50.8</td><td>0.008</td><td>0.155</td></tr>
+                            <tr><td>CogDual-SFT</td><td>58.4</td><td>47.0</td><td>45.0</td><td>71.7</td><td>55.5</td><td>0.015</td><td>0.161</td></tr>
+                            <tr><td>CogDual-RL</td><td>59.9</td><td>46.6</td><td>47.0</td><td>74.0</td><td>56.9</td><td class="best">0.016</td><td class="best">0.163</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td class="best">61.5</td><td class="best">48.5</td><td class="best">49.2</td><td class="best">77.2</td><td class="best">59.1</td><td>0.015</td><td>0.161</td></tr>
+                            <tr class="row-group"><td colspan="8">LLaMA3.1-8B-Instruct</td></tr>
+                            <tr><td>Vanilla</td><td>48.2</td><td>36.6</td><td>27.0</td><td>63.7</td><td>43.9</td><td>0.046</td><td>0.102</td></tr>
+                            <tr><td>CoT</td><td>50.1</td><td>40.4</td><td>28.0</td><td>64.3</td><td>45.7</td><td>0.047</td><td>0.103</td></tr>
+                            <tr><td>CB-CoT</td><td>52.8</td><td>41.4</td><td>27.7</td><td>65.0</td><td>46.7</td><td>0.048</td><td>0.105</td></tr>
+                            <tr><td>CogDual-SFT</td><td>56.0</td><td>46.9</td><td>43.8</td><td>75.1</td><td>55.4</td><td>0.061</td><td>0.118</td></tr>
+                            <tr><td>CogDual-RL</td><td>60.1</td><td>45.9</td><td>48.8</td><td>73.1</td><td>57.0</td><td class="best">0.064</td><td class="best">0.121</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td class="best">61.3</td><td class="best">47.2</td><td class="best">50.3</td><td class="best">75.4</td><td class="best">58.6</td><td>0.060</td><td>0.119</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="table-note">
+                    The first five columns are LLM-judged dimensions (0–100). Gains concentrate on storyline quality and character fidelity: exactly where the original pool covers profiles and contexts sparsely. BLEU/ROUGE-L are n-gram metrics against reference dialogue; AdvRole targets role-playing quality rather than n-gram overlap.
+                </p>
+            </div>
+
+            <div class="tab-panel" id="panel-raiden" role="tabpanel" hidden>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Qwen2.5-7B-Instruct</th><th>SBK ↑</th><th>CM ↑</th><th>SCK ↑</th><th>RCB ↑</th><th>TA ↑</th><th>Average ↑</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Vanilla</td><td>0.69</td><td>0.66</td><td>0.61</td><td>0.48</td><td>0.42</td><td>0.57</td></tr>
+                            <tr><td>CPO</td><td>0.71</td><td>0.69</td><td>0.63</td><td>0.50</td><td>0.44</td><td>0.59</td></tr>
+                            <tr><td>R4</td><td>0.70</td><td>0.68</td><td>0.64</td><td>0.51</td><td>0.43</td><td>0.59</td></tr>
+                            <tr><td>VeriRole</td><td class="best">0.74</td><td class="best">0.72</td><td>0.65</td><td>0.51</td><td>0.44</td><td>0.61</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td>0.73</td><td>0.71</td><td class="best">0.68</td><td class="best">0.58</td><td class="best">0.51</td><td class="best">0.64</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="table-note">
+                    All models are trained on CharacterEval and evaluated on RAIDEN without further tuning. VeriRole leads on profile- and history-tied dimensions (SBK, CM) that its hint-based reward explicitly targets. AdvRole leads on SCK, RCB, and TA, which require handling out-of-profile situations and steering the conversation in character.
+                </p>
+            </div>
+
+            <div class="tab-panel" id="panel-lanobe" role="tabpanel" hidden>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Qwen2.5-7B-Instruct</th><th>CC ↑</th><th>SC ↑</th><th>LQ ↑</th><th>IP ↑</th><th>Avg. ↑</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr class="row-group"><td colspan="6">Simplified Chinese</td></tr>
+                            <tr><td>Vanilla</td><td>5.99</td><td>5.70</td><td>7.59</td><td>5.04</td><td>6.08</td></tr>
+                            <tr><td>CPO</td><td>6.19</td><td>5.85</td><td>7.65</td><td>5.29</td><td>6.24</td></tr>
+                            <tr><td>R4</td><td>6.11</td><td>5.65</td><td>7.62</td><td>4.96</td><td>6.09</td></tr>
+                            <tr><td>VeriRole</td><td>6.34</td><td>5.78</td><td>7.54</td><td>5.19</td><td>6.21</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td class="best">6.41</td><td class="best">6.05</td><td class="best">7.71</td><td class="best">5.49</td><td class="best">6.42</td></tr>
+                            <tr class="row-group"><td colspan="6">Traditional Chinese</td></tr>
+                            <tr><td>Vanilla</td><td>5.09</td><td>4.98</td><td>6.01</td><td>4.78</td><td>5.21</td></tr>
+                            <tr><td>CPO</td><td>5.29</td><td>5.13</td><td>6.07</td><td>5.03</td><td>5.38</td></tr>
+                            <tr><td>R4</td><td>5.21</td><td>4.93</td><td>6.04</td><td>4.70</td><td>5.22</td></tr>
+                            <tr><td>VeriRole</td><td>5.44</td><td>5.06</td><td>5.96</td><td>4.93</td><td>5.35</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td class="best">5.51</td><td class="best">5.33</td><td class="best">6.13</td><td class="best">5.23</td><td class="best">5.55</td></tr>
+                            <tr class="row-group"><td colspan="6">Japanese</td></tr>
+                            <tr><td>Vanilla</td><td>5.32</td><td>4.98</td><td>6.95</td><td>4.52</td><td>5.44</td></tr>
+                            <tr><td>CPO</td><td>5.52</td><td>5.13</td><td>7.01</td><td>4.77</td><td>5.61</td></tr>
+                            <tr><td>R4</td><td>5.44</td><td>4.93</td><td>6.98</td><td>4.44</td><td>5.45</td></tr>
+                            <tr><td>VeriRole</td><td class="best">5.67</td><td>5.06</td><td>6.90</td><td>4.67</td><td>5.58</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td class="best">5.67</td><td class="best">5.26</td><td class="best">7.03</td><td class="best">4.90</td><td class="best">5.71</td></tr>
+                            <tr class="row-group"><td colspan="6">Korean</td></tr>
+                            <tr><td>Vanilla</td><td>4.70</td><td>4.45</td><td>6.42</td><td>4.00</td><td>4.89</td></tr>
+                            <tr><td>CPO</td><td>4.90</td><td>4.60</td><td>6.48</td><td>4.25</td><td>5.06</td></tr>
+                            <tr><td>R4</td><td>4.82</td><td>4.40</td><td>6.45</td><td>3.92</td><td>4.90</td></tr>
+                            <tr><td>VeriRole</td><td class="best">5.05</td><td>4.53</td><td>6.37</td><td>4.15</td><td>5.03</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td>5.00</td><td class="best">4.70</td><td class="best">6.49</td><td class="best">4.35</td><td class="best">5.13</td></tr>
+                            <tr class="row-group"><td colspan="6">Thai</td></tr>
+                            <tr><td>Vanilla</td><td>5.49</td><td>5.04</td><td>6.51</td><td>4.97</td><td>5.50</td></tr>
+                            <tr><td>CPO</td><td>5.69</td><td>5.19</td><td class="best">6.57</td><td>5.22</td><td>5.67</td></tr>
+                            <tr><td>R4</td><td>5.61</td><td>4.99</td><td>6.54</td><td>4.89</td><td>5.51</td></tr>
+                            <tr><td>VeriRole</td><td class="best">5.84</td><td>5.12</td><td>6.46</td><td>5.12</td><td>5.64</td></tr>
+                            <tr class="row-ours"><td>AdvRole (Ours)</td><td>5.74</td><td class="best">5.24</td><td>6.56</td><td class="best">5.25</td><td class="best">5.70</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="table-note">
+                    All dimensions are scored by Kimi-K2.6 on a 0–10 scale: CC character consistency, SC situational coherence, LQ linguistic quality, IP interaction proactivity. AdvRole attains the best average in every language.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ Lanobe ============ -->
+<section class="section" id="lanobe">
+    <div class="container">
+        <div class="section-head reveal">
+            <span class="section-index">05</span>
+            <h2>The Lanobe Benchmark</h2>
+        </div>
+        <div class="lanobe-intro reveal">
+            <p>
+                Existing role-playing benchmarks cover mainly English or Chinese, so they cannot show whether improving the scenario pool also helps when language and cultural setting change. <strong>Lanobe</strong> fills this gap: a multilingual role-playing benchmark with <strong>1,000 training and 500 test scenarios per language</strong>, built from character descriptions and plot summaries through a multi-stage LLM pipeline (Kimi-K2.6). It contains only LLM-generated text and will be released under a non-commercial research license.
+            </p>
+        </div>
+        <div class="lang-grid">
+            <div class="lang-card reveal reveal-delay-1">
+                <div class="lang-name">简体中文</div>
+                <div class="lang-score">6.42</div>
+                <div class="lang-meta">best baseline 6.24&nbsp;&nbsp;<span class="delta">+0.18</span></div>
+                <div class="lang-bar"><span style="width: 100%"></span></div>
+            </div>
+            <div class="lang-card reveal reveal-delay-2">
+                <div class="lang-name">繁體中文</div>
+                <div class="lang-score">5.55</div>
+                <div class="lang-meta">best baseline 5.38&nbsp;&nbsp;<span class="delta">+0.17</span></div>
+                <div class="lang-bar"><span style="width: 86.4%"></span></div>
+            </div>
+            <div class="lang-card reveal reveal-delay-3">
+                <div class="lang-name">日本語</div>
+                <div class="lang-score">5.71</div>
+                <div class="lang-meta">best baseline 5.61&nbsp;&nbsp;<span class="delta">+0.10</span></div>
+                <div class="lang-bar"><span style="width: 88.9%"></span></div>
+            </div>
+            <div class="lang-card reveal reveal-delay-4">
+                <div class="lang-name">한국어</div>
+                <div class="lang-score">5.13</div>
+                <div class="lang-meta">best baseline 5.06&nbsp;&nbsp;<span class="delta">+0.07</span></div>
+                <div class="lang-bar"><span style="width: 79.9%"></span></div>
+            </div>
+            <div class="lang-card reveal reveal-delay-5">
+                <div class="lang-name">ไทย</div>
+                <div class="lang-score">5.70</div>
+                <div class="lang-meta">best baseline 5.67&nbsp;&nbsp;<span class="delta">+0.03</span></div>
+                <div class="lang-bar"><span style="width: 88.6%"></span></div>
+            </div>
+        </div>
+        <p class="lanobe-note reveal">
+            The gain pattern also carries information: gains are larger in Chinese, where the base model's language ability is stronger, and smaller in Korean and Thai. Improving the scenario pool is not the only factor in multilingual role-playing: the base model's language ability determines how much room the training signal has to work with.
+        </p>
+    </div>
+</section>
+
+<!-- ============ Citation ============ -->
+<section class="section section-alt" id="citation">
+    <div class="container">
+        <div class="section-head reveal">
+            <span class="section-index">06</span>
+            <h2>Citation</h2>
+        </div>
+        <div class="citation-block reveal">
+            <button class="copy-btn" id="copyBtn" type="button" title="Copy BibTeX">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <span class="copy-label">Copy</span>
+            </button>
+<pre id="bibtex">@misc{zhang2026adversarialclosedloopcurriculumevolving,
+      title={Adversarial Closed-Loop Curriculum for Evolving Role-Playing Agents},
+      author={Zheng Zhang and Liu Liu and Qi Chai and Deheng Ye and Peilin Zhao and Mao Zheng and Hao Wang},
+      year={2026},
+      eprint={2609.28609},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2609.28609},
+}</pre>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<footer class="footer">
+    <div class="container footer-inner">
+        <div class="footer-brand">
+            <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+                <path d="M9 16a7 7 0 0 1 14 0" fill="none" stroke="#2dd4a7" stroke-width="2.6" stroke-linecap="round"/>
+                <path d="M23 16a7 7 0 0 1-14 0" fill="none" stroke="#f6b83c" stroke-width="2.6" stroke-linecap="round"/>
+            </svg>
+            <span>AdvRole</span>
+        </div>
+        <p class="footer-note">Adversarial Closed-Loop Curriculum for Evolving Role-Playing Agents&nbsp;&nbsp;·&nbsp;&nbsp;arXiv:2609.28609</p>
+        <div class="footer-links">
+            <a href="https://arxiv.org/abs/2609.28609" target="_blank" rel="noopener">Paper</a>
+            <a href="https://github.com/CjangCjengh/AdvRole" target="_blank" rel="noopener">Code</a>
+            <a href="https://github.com/3DAgentWorld/AdvRole" target="_blank" rel="noopener">3DAgentWorld</a>
+        </div>
+    </div>
+</footer>
+
+<script src="static/js/main.js"></script>
+</body>
+</html>
